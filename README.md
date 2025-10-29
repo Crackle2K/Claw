@@ -1,2 +1,2 @@
 # LeetCode-Solutions
-This repository contains my curated solutions to various coding challenges from the LeetCode platform, organized for reference and learning.
+This repository is a carefully curated and comprehensive collection of my solutions to problems from the LeetCode platform. It reflects my continuous exploration of algorithms, data structures, and optimization strategies across varying levels of difficulty. Each solution demonstrates thoughtful problem analysis, clean code practices, and efficient implementation aimed at achieving both clarity and performance. Through this collection, I aim to showcase my growth as a developer and my commitment to mastering algorithmic thinking and technical precision.
