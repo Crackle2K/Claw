@@ -64,7 +64,6 @@ void usercontrol(void) {
 **Status**: ⚠️ Requires workaround (ClawDrive expects 4 individual motors)
 
 ### Option A: Use 4 Motors with ClawDrive
-### Option A: Use 4 Motors with ClawDrive
 
 Use the two front and two back motors (or any 4 motors):
 

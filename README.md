@@ -125,9 +125,6 @@ That's it! Your robot now has smooth double movement capabilities.
 
 ## Example Project Structure
 
-## Example Project Structure
-
-This repository includes a complete example robot project:
 This repository includes a complete example robot project:
 
 ```
@@ -331,8 +328,6 @@ motor RightBack = motor(PORT4, ratio18_1, true);     // Note: reversed
 ## Configuration
 
 ### Switching Drive Modes
-
-Choose your preferred drive mode:
 
 Choose your preferred drive mode:
 

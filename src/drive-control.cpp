@@ -7,6 +7,9 @@ using namespace vex;
 // ========================================
 // ClawDrive Class Implementation
 // ========================================
+// Note: This library is motor-agnostic and accepts motor references.
+// It does not include robot-config.h to remain independent of any
+// specific robot configuration.
 
 ClawDrive::ClawDrive(motor& leftFront, motor& leftBack, motor& rightFront, motor& rightBack,
                      double deadzone, double sensitivity)
@@ -16,7 +19,9 @@ ClawDrive::ClawDrive(motor& leftFront, motor& leftBack, motor& rightFront, motor
     m_rightBack(rightBack),
     m_deadzone(deadzone),
     m_sensitivity(sensitivity) {
-  // Constructor - motors are now initialized
+  // Store references to motors provided by the user
+  // Note: Motors should be pre-configured with appropriate brake modes
+  // and velocity units before passing to this constructor
 }
 
 void ClawDrive::setDeadzone(double deadzone) {

@@ -18,6 +18,8 @@ using namespace vex;
 competition Competition;
 
 // Create ClawDrive instance with our motors
+// Note: Motors (LeftFront, LeftBack, etc.) are defined in robot-config.cpp
+// and are initialized before this global ClawDrive instance
 ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
 
 /*---------------------------------------------------------------------------*/
@@ -25,7 +27,7 @@ ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
 /*---------------------------------------------------------------------------*/
 
 void pre_auton(void) {
-  // Configure robot hardware
+  // Configure robot hardware (brake modes, velocity units)
   configureRobot();
   
   // Display information on the Brain screen

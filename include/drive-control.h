@@ -41,6 +41,9 @@ public:
   /**
    * Constructor: Initialize ClawDrive with motor references
    * 
+   * Note: Motors should be pre-configured with appropriate settings
+   * (brake mode, velocity units) before passing to this constructor.
+   * 
    * @param leftFront Left front motor
    * @param leftBack Left back motor
    * @param rightFront Right front motor
