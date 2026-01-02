@@ -1,16 +1,16 @@
 # Configuration Guide for Different Robot Types
 
-This guide helps you configure the diagonal movement system for different VEX robot drivetrain configurations.
+This guide helps you configure the Claw Drive Control Library for different VEX robot drivetrain configurations.
 
 ## Quick Configuration Selector
 
 Choose your robot type:
 
-1. **Standard 4-Motor Tank Drive** (Most common)
-2. **6-Motor Tank Drive** (High power)
-3. **Mecanum Wheel Drive** (Omnidirectional)
-4. **X-Drive** (Advanced omnidirectional)
-5. **H-Drive** (Strafing capable)
+1. **Standard 4-Motor Tank Drive** (Most common) ✅ Fully Supported
+2. **6-Motor Tank Drive** (High power) ⚠️ See notes below
+3. **Mecanum Wheel Drive** (Omnidirectional) ✅ Fully Supported
+4. **X-Drive** (Advanced omnidirectional) ✅ Fully Supported
+5. **H-Drive** (Strafing capable) ⚠️ Requires customization
 
 ---
 
@@ -18,23 +18,37 @@ Choose your robot type:
 
 **What it is**: Two motors on each side, standard wheels
 
-**Current configuration**: Already set up!
+**Status**: ✅ Fully supported by ClawDrive
+
+### Setup
 
 ```cpp
-// src/robot-config.cpp
+#include "drive-control.h"
+
+// Define your motors (adjust ports as needed)
 motor LeftFront = motor(PORT1, ratio18_1, false);
 motor LeftBack = motor(PORT2, ratio18_1, false);
 motor RightFront = motor(PORT3, ratio18_1, true);   // Reversed
 motor RightBack = motor(PORT4, ratio18_1, true);    // Reversed
+
+// Create ClawDrive instance
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
 ```
 
-**Recommended Control**: Arcade Drive (default in main.cpp)
+### Usage
 
 ```cpp
-// src/main.cpp - usercontrol()
-double forward = Controller1.Axis3.position(percent);
-double turn = Controller1.Axis1.position(percent);
-arcadeDrive(forward, turn);
+void usercontrol(void) {
+  while (true) {
+    double forward = Controller1.Axis3.position(percent);
+    double turn = Controller1.Axis1.position(percent);
+    
+    // Smooth double movement!
+    drive.arcadeDrive(forward, turn);
+    
+    wait(20, msec);
+  }
+}
 ```
 
 **Diagonal Movement**: Works perfectly with arcade drive
@@ -47,70 +61,36 @@ arcadeDrive(forward, turn);
 
 **When to use**: Heavy robots, need more torque
 
-### Configuration Steps
+**Status**: ⚠️ Requires workaround (ClawDrive expects 4 individual motors)
 
-**Step 1**: Update robot-config.h
+### Option A: Use 4 Motors with ClawDrive
+
+Use the two front and two back motors (or any 4 motors):
 
 ```cpp
-// include/robot-config.h
-// Add after existing motor declarations:
-extern motor LeftMiddle;
-extern motor RightMiddle;
-
-// OR use motor groups (recommended):
-extern motor_group LeftDrive;
-extern motor_group RightDrive;
-```
-
-**Step 2**: Update robot-config.cpp
-
-**Option A: Individual Motors**
-```cpp
-// src/robot-config.cpp
 motor LeftFront = motor(PORT1, ratio18_1, false);
 motor LeftMiddle = motor(PORT2, ratio18_1, false);
 motor LeftBack = motor(PORT3, ratio18_1, false);
 motor RightFront = motor(PORT4, ratio18_1, true);
 motor RightMiddle = motor(PORT5, ratio18_1, true);
 motor RightBack = motor(PORT6, ratio18_1, true);
-```
 
-**Option B: Motor Groups (Recommended)**
-```cpp
-// src/robot-config.cpp
-motor LeftFront = motor(PORT1, ratio18_1, false);
-motor LeftMiddle = motor(PORT2, ratio18_1, false);
-motor LeftBack = motor(PORT3, ratio18_1, false);
+// Create ClawDrive with 4 of the motors
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
 
-motor RightFront = motor(PORT4, ratio18_1, true);
-motor RightMiddle = motor(PORT5, ratio18_1, true);
-motor RightBack = motor(PORT6, ratio18_1, true);
-
-motor_group LeftDrive = motor_group(LeftFront, LeftMiddle, LeftBack);
-motor_group RightDrive = motor_group(RightFront, RightMiddle, RightBack);
-```
-
-**Step 3**: Update drive-control.cpp
-
-If using motor groups:
-```cpp
-// src/drive-control.cpp - arcadeDrive function
-void arcadeDrive(double forward, double turn) {
-  forward = applyDeadzone(forward, DRIVE_DEADZONE);
-  turn = applyDeadzone(turn, DRIVE_DEADZONE);
-  
-  forward *= DRIVE_SENSITIVITY;
-  turn *= DRIVE_SENSITIVITY;
-  
-  double leftVelocity = clamp(forward + turn, -100.0, 100.0);
-  double rightVelocity = clamp(forward - turn, -100.0, 100.0);
-  
-  LeftDrive.spin(directionType::fwd, leftVelocity, velocityUnits::pct);
-  RightDrive.spin(directionType::fwd, rightVelocity, velocityUnits::pct);
+// Separately control the middle motors to follow
+// In usercontrol or autonomous:
+void syncMiddleMotors() {
+  LeftMiddle.spin(fwd, LeftFront.velocity(pct), pct);
+  RightMiddle.spin(fwd, RightFront.velocity(pct), pct);
 }
 ```
 
-**Diagonal Movement**: Works the same as 4-motor
+### Option B: Create Motor Groups and Extend ClawDrive
+
+For full 6-motor support, you would need to modify the ClawDrive class to accept motor_group references. This is an advanced customization.
+
+**Diagonal Movement**: Works with Option A
 
 ---
 
@@ -120,23 +100,27 @@ void arcadeDrive(double forward, double turn) {
 
 **When to use**: Need true omnidirectional movement
 
-### Configuration Steps
+**Status**: ✅ Fully supported with fieldCentricDrive
 
-**Step 1**: Verify motor connections
-- Motors must be at 45° angles
-- Rollers should form an "X" pattern when viewed from above
-
-**Step 2**: No changes needed to robot-config files!
-
-**Step 3**: Update main.cpp to use field-centric drive
+### Setup
 
 ```cpp
-// src/main.cpp - usercontrol()
+#include "drive-control.h"
+
+// Mecanum motors - verify roller orientation!
+motor LeftFront = motor(PORT1, ratio18_1, false);
+motor LeftBack = motor(PORT2, ratio18_1, false);
+motor RightFront = motor(PORT3, ratio18_1, true);
+motor RightBack = motor(PORT4, ratio18_1, true);
+
+// Create ClawDrive instance
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
+```
+
+### Usage
+
+```cpp
 void usercontrol(void) {
-  Brain.Screen.clearScreen();
-  Brain.Screen.setCursor(1, 1);
-  Brain.Screen.print("Mecanum Drive Active");
-  
   while (true) {
     // Get all three control axes
     double forward = Controller1.Axis3.position(percent);  // Left Y
@@ -144,79 +128,66 @@ void usercontrol(void) {
     double turn = Controller1.Axis1.position(percent);     // Right X
     
     // Use field-centric drive for omnidirectional control
-    fieldCentricDrive(forward, strafe, turn);
+    drive.fieldCentricDrive(forward, strafe, turn);
     
     wait(20, msec);
   }
 }
 ```
 
+**Important**: Verify wheel orientation - rollers should form an "X" pattern when viewed from above
+
 **Diagonal Movement**: Best diagonal movement capability!
 
 ### Mecanum Control Tips
 - Forward + Strafe = True diagonal (no rotation)
-- Forward + Turn = Curved diagonal
+- Forward + Turn = Curved diagonal  
 - All three = Complex movement paths
 
 ---
 
 ## 4. X-Drive Configuration
 
-**What it is**: Four wheels at 45° angles, omni wheels
+**What it is**: Four wheels at 45° angles with omni wheels
 
 **When to use**: Fast omnidirectional movement, good for offense
 
-### Configuration Steps
+**Status**: ✅ Supported with fieldCentricDrive (may need motor reversal adjustments)
 
-**Step 1**: Update motor directions for X-Drive
+### Setup
 
 ```cpp
-// src/robot-config.cpp
+#include "drive-control.h"
+
 // X-Drive motors are at 45° angles
+// Adjust reversed flags based on your wiring
 motor LeftFront = motor(PORT1, ratio18_1, false);
-motor LeftBack = motor(PORT2, ratio18_1, true);    // Reversed
-motor RightFront = motor(PORT3, ratio18_1, true);   // Reversed
+motor LeftBack = motor(PORT2, ratio18_1, true);    // May need reversal
+motor RightFront = motor(PORT3, ratio18_1, true);  // May need reversal  
 motor RightBack = motor(PORT4, ratio18_1, false);
+
+// Create ClawDrive instance
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
 ```
 
-**Step 2**: Update field-centric drive for X-Drive kinematics
+### Usage
 
 ```cpp
-// src/drive-control.cpp - Add new function
-void xDrive(double forward, double strafe, double turn) {
-  forward = applyDeadzone(forward, DRIVE_DEADZONE);
-  strafe = applyDeadzone(strafe, DRIVE_DEADZONE);
-  turn = applyDeadzone(turn, DRIVE_DEADZONE);
-  
-  forward *= DRIVE_SENSITIVITY;
-  strafe *= DRIVE_SENSITIVITY;
-  turn *= DRIVE_SENSITIVITY;
-  
-  // X-Drive kinematics (uses sqrt(2) factor)
-  double leftFrontVelocity = forward + strafe + turn;
-  double leftBackVelocity = forward - strafe + turn;
-  double rightFrontVelocity = forward - strafe - turn;
-  double rightBackVelocity = forward + strafe - turn;
-  
-  // Scale down if needed
-  double maxVelocity = fmax(fmax(fabs(leftFrontVelocity), fabs(leftBackVelocity)),
-                            fmax(fabs(rightFrontVelocity), fabs(rightBackVelocity)));
-  
-  if (maxVelocity > 100.0) {
-    leftFrontVelocity = (leftFrontVelocity / maxVelocity) * 100.0;
-    leftBackVelocity = (leftBackVelocity / maxVelocity) * 100.0;
-    rightFrontVelocity = (rightFrontVelocity / maxVelocity) * 100.0;
-    rightBackVelocity = (rightBackVelocity / maxVelocity) * 100.0;
+void usercontrol(void) {
+  while (true) {
+    double forward = Controller1.Axis3.position(percent);
+    double strafe = Controller1.Axis4.position(percent);
+    double turn = Controller1.Axis1.position(percent);
+    
+    // Use field-centric drive (handles X-Drive kinematics)
+    drive.fieldCentricDrive(forward, strafe, turn);
+    
+    wait(20, msec);
   }
-  
-  LeftFront.spin(directionType::fwd, leftFrontVelocity, velocityUnits::pct);
-  LeftBack.spin(directionType::fwd, leftBackVelocity, velocityUnits::pct);
-  RightFront.spin(directionType::fwd, rightFrontVelocity, velocityUnits::pct);
-  RightBack.spin(directionType::fwd, rightBackVelocity, velocityUnits::pct);
 }
 ```
 
-**Step 3**: Use in main.cpp (same as mecanum)
+**Note**: Test and adjust motor directions based on actual movement
 
 **Diagonal Movement**: Excellent, faster than mecanum
 
@@ -228,61 +199,93 @@ void xDrive(double forward, double strafe, double turn) {
 
 **When to use**: Want strafing but keep tank drive simplicity
 
-### Configuration Steps
+**Status**: ⚠️ Requires customization (ClawDrive doesn't support strafe motor)
 
-**Step 1**: Add strafe motor(s) to robot-config.h
+### Workaround
 
-```cpp
-// include/robot-config.h
-extern motor StrafeMotor;  // Or motor_group for two strafe motors
-```
-
-**Step 2**: Add to robot-config.cpp
+Use ClawDrive for tank movement, control strafe separately:
 
 ```cpp
-// src/robot-config.cpp
+#include "drive-control.h"
+
+// Tank drive motors
+motor LeftFront = motor(PORT1, ratio18_1, false);
+motor LeftBack = motor(PORT2, ratio18_1, false);
+motor RightFront = motor(PORT3, ratio18_1, true);
+motor RightBack = motor(PORT4, ratio18_1, true);
+
+// Strafe motor (separate)
 motor StrafeMotor = motor(PORT5, ratio18_1, false);
-// Configure in configureRobot():
-StrafeMotor.setStopping(brake);
-```
 
-**Step 3**: Create H-Drive control function
+// Create ClawDrive for tank movement
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack);
 
-```cpp
-// src/drive-control.cpp - Add new function
-void hDrive(double forward, double strafe, double turn) {
-  // Tank drive for forward/turn
-  double tankForward = applyDeadzone(forward, DRIVE_DEADZONE);
-  double tankTurn = applyDeadzone(turn, DRIVE_DEADZONE);
-  
-  tankForward *= DRIVE_SENSITIVITY;
-  tankTurn *= DRIVE_SENSITIVITY;
-  
-  double leftVelocity = clamp(tankForward + tankTurn, -100.0, 100.0);
-  double rightVelocity = clamp(tankForward - tankTurn, -100.0, 100.0);
-  
-  // Separate strafe control
-  double strafeVelocity = applyDeadzone(strafe, DRIVE_DEADZONE);
-  strafeVelocity = clamp(strafeVelocity * DRIVE_SENSITIVITY, -100.0, 100.0);
-  
-  LeftFront.spin(directionType::fwd, leftVelocity, velocityUnits::pct);
-  LeftBack.spin(directionType::fwd, leftVelocity, velocityUnits::pct);
-  RightFront.spin(directionType::fwd, rightVelocity, velocityUnits::pct);
-  RightBack.spin(directionType::fwd, rightVelocity, velocityUnits::pct);
-  StrafeMotor.spin(directionType::fwd, strafeVelocity, velocityUnits::pct);
+void usercontrol(void) {
+  while (true) {
+    double forward = Controller1.Axis3.position(percent);
+    double turn = Controller1.Axis1.position(percent);
+    double strafe = Controller1.Axis4.position(percent);
+    
+    // Use ClawDrive for forward/turn
+    drive.arcadeDrive(forward, turn);
+    
+    // Control strafe separately
+    StrafeMotor.spin(fwd, strafe, pct);
+    
+    wait(20, msec);
+  }
 }
 ```
 
-**Step 4**: Use in main.cpp
+**Diagonal Movement**: Good, combines tank curves with strafing
+
+---
+
+## ClawDrive Configuration Settings
+
+### Deadzone
+
+Controls how much controller drift is ignored:
 
 ```cpp
-double forward = Controller1.Axis3.position(percent);
-double strafe = Controller1.Axis4.position(percent);
-double turn = Controller1.Axis1.position(percent);
-hDrive(forward, strafe, turn);
+// Set in constructor
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack, 
+                10.0);  // 10% deadzone
+
+// Or set later
+drive.setDeadzone(10.0);
 ```
 
-**Diagonal Movement**: Good, combines tank curves with strafing
+- **Default**: 5.0 (5%)
+- **Range**: 0-20 recommended
+- **Higher values**: Less sensitive to small movements
+- **Lower values**: More responsive but may drift
+
+### Sensitivity
+
+Controls overall drive speed/power:
+
+```cpp
+// Set in constructor
+ClawDrive drive(LeftFront, LeftBack, RightFront, RightBack,
+                5.0,   // deadzone
+                0.8);  // 80% sensitivity
+
+// Or set later  
+drive.setSensitivity(0.8);
+```
+
+- **Default**: 1.0 (100%)
+- **Range**: 0.1-2.0 recommended
+- **Lower values** (0.5): Slower, more precise control
+- **Higher values** (1.5): Faster, more aggressive driving
+
+### Getting Current Settings
+
+```cpp
+double currentDeadzone = drive.getDeadzone();
+double currentSensitivity = drive.getSensitivity();
+```
 
 ---
 
@@ -326,7 +329,8 @@ Choose gear ratio based on your needs:
 | 18:1 | Medium | Medium | **General use (default)** |
 | 6:1 | Fast | Low | Lightweight, speed-focused |
 
-Update in robot-config.cpp:
+Update when creating motors:
+
 ```cpp
 motor LeftFront = motor(PORT1, ratio18_1, false);  // Change ratio here
 //                            ^^^
@@ -338,14 +342,19 @@ motor LeftFront = motor(PORT1, ratio18_1, false);  // Change ratio here
 ## Troubleshooting
 
 ### Problem: Robot turns when going "straight"
+
 **Solution**: One side is wired backward
+
 ```cpp
-// Try reversing one side in robot-config.cpp
+// Try reversing one side
 motor RightFront = motor(PORT3, ratio18_1, true);  // Toggle this
+motor RightBack = motor(PORT4, ratio18_1, true);   // Toggle this
 ```
 
 ### Problem: Robot goes backward when joystick pushed forward
+
 **Solution**: Reverse all motors
+
 ```cpp
 motor LeftFront = motor(PORT1, ratio18_1, true);   // Add 'true'
 motor LeftBack = motor(PORT2, ratio18_1, true);
@@ -354,7 +363,9 @@ motor RightBack = motor(PORT4, ratio18_1, false);
 ```
 
 ### Problem: Mecanum wheels don't strafe correctly
+
 **Solution**: Check wheel orientation - rollers should form X pattern
+
 ```
 Top view:
   / \    Correct X pattern
@@ -362,10 +373,19 @@ Top view:
 ```
 
 ### Problem: Diagonal movement too sensitive
+
 **Solution**: Reduce sensitivity
+
 ```cpp
-// src/robot-config.cpp
-const double DRIVE_SENSITIVITY = 0.7;  // Reduce from 1.0
+drive.setSensitivity(0.7);  // Reduce from 1.0
+```
+
+### Problem: Controller drift affecting diagonal movement
+
+**Solution**: Increase deadzone
+
+```cpp
+drive.setDeadzone(10.0);  // Increase from 5.0
 ```
 
 ---
@@ -379,23 +399,23 @@ void testConfiguration(void) {
   Brain.Screen.print("Testing configuration...");
   
   // Test 1: Forward
-  arcadeDrive(50, 0);
+  drive.arcadeDrive(50, 0);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   wait(0.5, seconds);
   // Should move straight forward
   
   // Test 2: Turn right
-  arcadeDrive(0, 50);
+  drive.arcadeDrive(0, 50);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   wait(0.5, seconds);
   // Should rotate clockwise
   
   // Test 3: Diagonal forward-right
-  arcadeDrive(50, 50);
+  drive.arcadeDrive(50, 50);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   // Should curve forward-right smoothly
   
   Brain.Screen.print("Test complete!");
@@ -408,12 +428,12 @@ If any test fails, check your motor directions and ports!
 
 ## Summary Table
 
-| Drive Type | Motors | Diagonal? | Strafe? | Complexity |
-|------------|--------|-----------|---------|------------|
-| 4-Motor Tank | 4 | Good | No | Low |
-| 6-Motor Tank | 6 | Good | No | Low |
-| Mecanum | 4 | Best | Yes | Medium |
-| X-Drive | 4 | Best | Yes | Medium |
-| H-Drive | 5-6 | Good | Yes | Medium |
+| Drive Type | Motors | ClawDrive Support | Strafe? | Complexity |
+|------------|--------|-------------------|---------|------------|
+| 4-Motor Tank | 4 | ✅ Full | No | Low |
+| 6-Motor Tank | 6 | ⚠️ Partial | No | Low |
+| Mecanum | 4 | ✅ Full | Yes | Medium |
+| X-Drive | 4 | ✅ Full | Yes | Medium |
+| H-Drive | 5-6 | ⚠️ Partial | Yes | Medium |
 
-**Recommendation**: Start with standard 4-motor tank drive and arcade control. It provides excellent diagonal movement with the simplest configuration!
+**Recommendation**: Start with standard 4-motor tank drive and arcade control using ClawDrive. It provides excellent diagonal movement with the simplest configuration!
