@@ -98,7 +98,7 @@ tankDrive(leftSide, rightSide);
 fieldCentricDrive(forward, strafe, turn);
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
@@ -107,7 +107,7 @@ fieldCentricDrive(forward, strafe, turn);
 | Controller drift | Increase DRIVE_DEADZONE |
 | Diagonal not smooth | Check motor connections |
 
-## 📚 More Info
+## More Info
 
 - **README.md** - Full documentation
 - **EXAMPLES.md** - Code examples
