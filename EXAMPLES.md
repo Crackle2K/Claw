@@ -367,30 +367,31 @@ forward = 20, turn = 100   // ~79° angle
 
 ```cpp
 void testDiagonals(void) {
+  // Assuming ClawDrive instance 'drive' exists
   Brain.Screen.print("Testing diagonals...");
   
   // Test 1: Forward-right
-  arcadeDrive(60, 40);
+  drive.arcadeDrive(60, 40);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   wait(0.5, seconds);
   
   // Test 2: Forward-left
-  arcadeDrive(60, -40);
+  drive.arcadeDrive(60, -40);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   wait(0.5, seconds);
   
   // Test 3: Backward-right
-  arcadeDrive(-60, 40);
+  drive.arcadeDrive(-60, 40);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   wait(0.5, seconds);
   
   // Test 4: Backward-left
-  arcadeDrive(-60, -40);
+  drive.arcadeDrive(-60, -40);
   wait(1, seconds);
-  arcadeDrive(0, 0);
+  drive.stop();
   
   Brain.Screen.print("Test complete!");
 }

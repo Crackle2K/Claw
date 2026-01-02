@@ -24,8 +24,6 @@ drive.arcadeDrive(forward, turn);  // Instant double movement!
 
 ### Three Drive Control Methods
 
-### Three Drive Control Methods
-
 This library implements three different drive control methods:
 
 #### 1. **Arcade Drive** (Recommended)
